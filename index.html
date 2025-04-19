@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Настраиваемая сетка с паттерном</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-top: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .controls label {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+        }
+
+        .buttons {
+            margin-top: 10px;
+        }
+
+        input[type="number"],
+        input[type="color"],
+        input[type="text"] {
+            width: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Создание изображения с сеткой</h2>
+    <div class="controls">
+        <label> Ширина (px): <input type="number" id="imgWidth" value="6000" /> </label>
+        <label> Высота (px): <input type="number" id="imgHeight" value="6000" /> </label>
+        <label> DPI (для инфо): <input type="number" id="dpi" value="400" /> </label>
+        <label> Паттерн шагов (через запятую, px): <input type="text" id="patternSteps" value="500,50" /> </label>
+        <label> Цвет тонкой линии: <input type="color" id="thinColor" value="#cccccc" /> </label>
+        <label> Цвет толстой линии: <input type="color" id="boldColor" value="#000000" /> </label>
+        <label> Толщина тонкой линии (px): <input type="number" id="thinWidth" value="1" /> </label>
+        <label> Толщина толстой линии (px): <input type="number" id="boldWidth" value="3" /> </label>
+    </div>
+    <div class="buttons">
+        <button onclick="generateGrid()">🔄 Обновить</button>
+        <button onclick="download()">💾 Сохранить PNG</button>
+        <button onclick="resetDefaults()">♻️ Сбросить</button>
+    </div>
+    <canvas id="gridCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gridCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function parsePattern(input) {
+            return input
+                .split(',')
+                .map(val => parseInt(val.trim()))
+                .filter(val => !isNaN(val) && val > 0);
+        }
+
+        function drawLines(width, height, steps, thinColor, thinWidth, boldColor, boldWidth) {
+            // Сначала рисуем тонкие линии каждые 50 пикселей
+            const thinStep = 50;
+            let posX = 0, posY = 0;
+
+            // Тонкие линии по X
+            while (posX < width) {
+                ctx.beginPath();
+                ctx.strokeStyle = thinColor;
+                ctx.lineWidth = thinWidth;
+                ctx.moveTo(posX, 0);
+                ctx.lineTo(posX, height);
+                ctx.stroke();
+                posX += thinStep;
+            }
+
+            // Тонкие линии по Y
+            while (posY < height) {
+                ctx.beginPath();
+                ctx.strokeStyle = thinColor;
+                ctx.lineWidth = thinWidth;
+                ctx.moveTo(0, posY);
+                ctx.lineTo(width, posY);
+                ctx.stroke();
+                posY += thinStep;
+            }
+
+            // Теперь рисуем толстые линии по заданному паттерну
+            posX = 0;
+            posY = 0;
+            let i = 0;
+
+            // Толстые линии по X
+            while (posX < width) {
+                const step = steps[i % steps.length];
+                posX += step;
+                ctx.beginPath();
+                ctx.strokeStyle = boldColor;
+                ctx.lineWidth = boldWidth; // Применяем boldWidth ко всем линиям в паттерне (и 500, и 50)
+                ctx.moveTo(posX, 0);
+                ctx.lineTo(posX, height);
+                ctx.stroke();
+                i++;
+            }
+
+            // Толстые линии по Y
+            i = 0;
+            while (posY < height) {
+                const step = steps[i % steps.length];
+                posY += step;
+                ctx.beginPath();
+                ctx.strokeStyle = boldColor;
+                ctx.lineWidth = boldWidth; // Применяем boldWidth ко всем линиям в паттерне (и 500, и 50)
+                ctx.moveTo(0, posY);
+                ctx.lineTo(width, posY);
+                ctx.stroke();
+                i++;
+            }
+        }
+
+        function generateGrid() {
+            const width = parseInt(document.getElementById("imgWidth").value);
+            const height = parseInt(document.getElementById("imgHeight").value);
+            const patternSteps = parsePattern(document.getElementById("patternSteps").value);
+            const thinColor = document.getElementById("thinColor").value;
+            const boldColor = document.getElementById("boldColor").value;
+            const thinWidth = parseFloat(document.getElementById("thinWidth").value);
+            const boldWidth = parseFloat(document.getElementById("boldWidth").value);
+
+            if (patternSteps.length === 0) {
+                alert("Пожалуйста, укажи хотя бы один шаг сетки.");
+                return;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            drawLines(width, height, patternSteps, thinColor, thinWidth, boldColor, boldWidth);
+        }
+
+        function download() {
+            const link = document.createElement("a");
+            link.download = "grid_image.png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+
+        function resetDefaults() {
+            document.getElementById("imgWidth").value = 6000;
+            document.getElementById("imgHeight").value = 6000;
+            document.getElementById("patternSteps").value = "500,50";
+            document.getElementById("thinColor").value = "#cccccc";
+            document.getElementById("boldColor").value = "#000000";
+            document.getElementById("thinWidth").value = 1;
+            document.getElementById("boldWidth").value = 3;
+            generateGrid();
+        }
+
+        window.onload = generateGrid;
+    </script>
+</body>
+
+</html>
